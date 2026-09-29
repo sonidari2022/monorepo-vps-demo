@@ -1,0 +1,20 @@
+{
+  "name": "monorepo-vps-project",
+  "version": "1.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.8.0",
+  "engines": {
+    "node": ">=24.20.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:web": "pnpm --filter web dev",
+    "prisma:generate": "pnpm --filter api exec prisma generate",
+    "prisma:migrate": "pnpm --filter api exec prisma migrate dev"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  }
+}

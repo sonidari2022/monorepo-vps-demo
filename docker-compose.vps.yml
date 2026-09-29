@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  api:
+    image: ghcr.io/${GITHUB_OWNER}/my-monorepo-api:latest
+    container_name: monorepo_api
+    restart: always
+    ports:
+      - "127.0.0.1:3091:3091"
+    environment:
+      - PORT=3091
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+    networks:
+      - app-network
+
+  web:
+    image: ghcr.io/${GITHUB_OWNER}/my-monorepo-web:latest
+    container_name: monorepo_web
+    restart: always
+    ports:
+      - "127.0.0.1:3092:80"
+    environment:
+      - VITE_API_URL=https://api-exa.midominio.net
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
