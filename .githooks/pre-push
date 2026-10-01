@@ -1,0 +1,11 @@
+#!/bin/bash
+# .githooks/pre-push: bloquea cualquier push que actualice main en el remoto
+while read local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "Push a main bloqueado."
+    echo "Prueba primero en staging y luego usa:"
+    echo "  gh pr create --base main --head staging --fill && gh pr merge --merge"
+    exit 1
+  fi
+done
+exit 0
