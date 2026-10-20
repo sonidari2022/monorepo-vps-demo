@@ -1,0 +1,30 @@
+services:
+  api:
+    image: ghcr.io/${GITHUB_OWNER:?Falta GITHUB_OWNER en .env}/my-monorepo-api:${IMAGE_TAG:-staging}
+    container_name: monorepo_api_staging
+    restart: always
+    ports:
+      - "127.0.0.1:3093:3091"
+    environment:
+      - PORT=3091
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL:?Falta DATABASE_URL en .env}
+    networks:
+      - app-network
+      - db_stg
+
+  web:
+    image: ghcr.io/${GITHUB_OWNER:?Falta GITHUB_OWNER en .env}/my-monorepo-web:${IMAGE_TAG:-staging}
+    container_name: monorepo_web_staging
+    restart: always
+    ports:
+      - "127.0.0.1:3094:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+  db_stg:
+    external: true
+    name: db_stg

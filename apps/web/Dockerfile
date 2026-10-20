@@ -1,5 +1,6 @@
 FROM node:24-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+#RUN corepack enable && corepack prepare pnpm@latest --activate #no incluir latest porque se está especificando la version en package
+RUN corepack enable
 
 FROM base AS builder
 WORKDIR /app
