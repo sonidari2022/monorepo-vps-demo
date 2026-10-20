@@ -1,5 +1,6 @@
 FROM node:24-alpine AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+#RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable
 
 FROM base AS builder
 WORKDIR /app
@@ -19,4 +20,4 @@ COPY --from=builder /app/out/package.json ./package.json
 COPY --from=builder /app/apps/api/prisma ./prisma
 
 EXPOSE 3091
-CMD ["pnpm", "run", "start:prod"]
+CMD ["npm", "run", "start:prod"]
