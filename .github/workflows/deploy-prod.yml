@@ -37,6 +37,8 @@ jobs:
           file: ./apps/api/Dockerfile
           push: true
           tags: ghcr.io/${{ env.OWNER }}/my-monorepo-api:latest
+          cache-from: type=gha,scope=api-prod
+          cache-to: type=gha,mode=max,scope=api-prods          
 
       - name: Build and push Web image (Production)
         uses: docker/build-push-action@v5
@@ -44,21 +46,78 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=${{ vars.API_URL_PROD }}
           tags: ghcr.io/${{ env.OWNER }}/my-monorepo-web:latest
+          cache-from: type=gha,scope=web-prod
+          cache-to: type=gha,mode=max,scope=web-prods          
 
   deploy-to-vps:
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
     steps:
-      - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      # =================================================================
+      # ARCHIVO COMPOSE - FORMA 1 (ACTIVA): copia automática por SCP
+      # El docker-compose.vps.yml del repositorio es la fuente de
+      # verdad y se sincroniza con el VPS en cada despliegue.
+      # Requisito: el archivo debe estar en la raíz del repositorio
+      # (si no, ajustar "source").
+      #
+      # FORMA 2 (MANUAL): si prefieres mantener el compose directamente
+      # en el VPS, borra o comenta los dos pasos siguientes
+      # (Checkout y Copy compose file).
+      # =================================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy compose file to VPS
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          source: docker-compose.vps.yml
+          target: /opt/monorepo-demo/
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        # ---------------------------------------------------------------
+        # AUTENTICACIÓN - OPCIÓN B (ACTIVA): GITHUB_TOKEN (sin GHCR_PAT)
+        # ---------------------------------------------------------------
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: GHCR_USER,GHCR_TOKEN
           script: |
             cd /opt/monorepo-demo
-            docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GHCR_PAT }}
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker compose -f docker-compose.vps.yml pull
             docker compose -f docker-compose.vps.yml up -d --remove-orphans
             docker image prune -f
+            docker logout ghcr.io
+
+        # ---------------------------------------------------------------
+        # AUTENTICACIÓN - OPCIÓN A (COMENTADA): GHCR_PAT
+        # Para usarla: comenta el bloque de la Opción B (env, envs y script)
+        # y descomenta este bloque. Requiere el secreto GHCR_PAT en GitHub
+        # (token clásico con scope read:packages y expiración definida).
+        # ---------------------------------------------------------------
+        # with:
+        #   host: ${{ secrets.VPS_HOST }}
+        #   username: ${{ secrets.VPS_USER }}
+        #   key: ${{ secrets.VPS_SSH_KEY }}
+        #   script: |
+        #     cd /opt/monorepo-demo
+        #     echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        #     docker compose -f docker-compose.vps.yml pull
+        #     docker compose -f docker-compose.vps.yml up -d --remove-orphans
+        #     docker image prune -f
+        #     docker logout ghcr.io
