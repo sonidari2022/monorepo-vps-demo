@@ -37,6 +37,8 @@ jobs:
           file: ./apps/api/Dockerfile
           push: true
           tags: ghcr.io/${{ env.OWNER }}/my-monorepo-api:staging
+          cache-from: type=gha,scope=api-prod
+          cache-to: type=gha,mode=max,scope=api-prods          
 
       - name: Build and push Web image (Staging)
         uses: docker/build-push-action@v5
@@ -44,7 +46,11 @@ jobs:
           context: .
           file: ./apps/web/Dockerfile
           push: true
+          build-args: |
+            VITE_API_URL=${{ vars.API_URL_STAGING  }}
           tags: ghcr.io/${{ env.OWNER }}/my-monorepo-web:staging
+          cache-from: type=gha,scope=web-prod
+          cache-to: type=gha,mode=max,scope=web-prods          
 
   deploy-to-vps-staging:
     needs: build-and-push-staging

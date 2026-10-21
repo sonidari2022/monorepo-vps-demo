@@ -19,5 +19,5 @@ COPY --from=builder /app/out/node_modules ./node_modules
 COPY --from=builder /app/out/package.json ./package.json
 COPY --from=builder /app/apps/api/prisma ./prisma
 
-EXPOSE 3091
+EXPOSE 3091s
 CMD ["npm", "run", "start:prod"]
