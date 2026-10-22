@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "ejemplo" ADD COLUMN     "datecreate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
